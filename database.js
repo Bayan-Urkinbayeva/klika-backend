@@ -2,29 +2,75 @@ import mysql from 'mysql2'
 import dotenv from 'dotenv'
 dotenv.config()
 export const pool = mysql.createPool({
-            host: process.env.HOST,
-            user: process.env.USER,
-            password: process.env.PASSWORD,
-            database: process.env.DATABASE,
-        }).promise();
+    host: process.env.HOST,
+    user: process.env.USER,
+    password: process.env.PASSWORD,
+    database: process.env.DATABASE,
+}).promise();
 
-export async function getMusics(){
-    const [res] = await pool.query("SELECT * FROM music")
+export async function getMusics(cookies){
+    const filter= getFilters(cookies)
+    const limit = getPage(cookies)
+    const [res] = await pool.query(`
+        SELECT m.id, m.name, m.year, g.name as genre, s.name as singer 
+            FROM music as m 
+            INNER JOIN genres as g on m.genre_id = g.id 
+            INNER JOIN singers as s on m.singer_id=s.id 
+            ${filter} 
+            order by m.id
+            ${limit}
+    `)
     return res;
 }
-export async function getMusic(id){
-    const [res] = await pool.query(`SELECT * FROM music WHERE id= ?`, [id])
-    return res;
+
+export function getFilters(cookies){
+    let filterList = getQueryFilter(cookies)
+    let result = 'where'
+    if (filterList.length < 1)
+        return ''
+
+    for (let i = 0; i < filterList.length; i++) {
+        result += filterList[i]
+        if (i+1 !== filterList.length)
+            result += ' and '
+    }
+    return result
 }
-export async function getGenres(){
-    const [res] = await pool.query("SELECT DISTINCT `genre` FROM `music` ORDER BY `genre` ASC")
-    return res;
+
+export function getQueryFilter(filters){
+    let filter = []
+    if (filters.singer)
+        filter.push(` s.id=${filters.singer}`)
+    if (filters.genre)
+        filter.push(` g.id=${filters.genre}` )
+    if (filters.year)
+        filter.push(` m.year=${filters.year}`)
+    return filter
 }
-export async function getSingers(){
-    const [res] = await pool.query("SELECT DISTINCT `singer` FROM `music` ORDER BY `singer` ASC")
-    return res;
+
+export function getPage(filters){
+    let limit = ''
+    let page = filters.page
+    let size = filters.size
+
+    if (!page) page = 1
+    if (!size) size = 5
+
+    let begin = ((page-1)*size)
+
+    return `limit ${begin}, ${size}`
 }
-export async function getYears(){
-    const [res] = await pool.query("SELECT DISTINCT `year` FROM `music` ORDER BY `year` ASC")
-    return res;
+
+function toFlat(arr){
+    return arr.map(x => (
+        Object.values(x)
+    )).flat()
+
+}
+export async function getFilter(){
+    const [singer] = await pool.query("SELECT DISTINCT * FROM `singers` ORDER BY name ASC")
+    const [genres] = await pool.query("SELECT DISTINCT * FROM `genres` ORDER BY name ASC")
+    let [year] = await pool.query("SELECT DISTINCT year FROM `music` ORDER BY year")
+    year = toFlat(year)
+    return {singer: singer, genres: genres, year: year}
 }

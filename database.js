@@ -11,16 +11,65 @@ export const pool = mysql.createPool({
 export async function getMusics(cookies){
     const filter= getFilters(cookies)
     const limit = getPage(cookies)
+    const sorted = getSorted(cookies)
     const [res] = await pool.query(`
         SELECT m.id, m.name, m.year, g.name as genre, s.name as singer 
             FROM music as m 
             INNER JOIN genres as g on m.genre_id = g.id 
             INNER JOIN singers as s on m.singer_id=s.id 
             ${filter} 
-            order by m.id
+            order by ${sorted.length != 0 ? sorted : 'm.id'}
             ${limit}
     `)
     return res;
+}
+export function getSorted(cookies){
+    let sortedList = getQuerySort(cookies)
+    let result =''
+    if(sortedList.length<1){
+        return ''
+    }
+    for(let i=0; i<sortedList.length; i++){
+        result+=sortedList[i]
+        if (i+1 != sortedList.length){
+            result += ' and '
+        }
+    }
+    return result
+}
+export function getQuerySort(sort){
+    let sorted = []
+    if(sort.sortbyAsc == "id"){
+        sorted.push(" m.id ASC")
+    }
+    if(sort.sortbyAsc == "singer"){
+        sorted.push(" s.name ASC")
+    }
+    if(sort.sortbyAsc=="genre"){
+        sorted.push(" g.name ASC")
+    }
+    if(sort.sortbyAsc=="year"){
+        sorted.push(" m.year ASC")
+    }
+    if(sort.sortbyAsc=="music"){
+        sorted.push(" m.name ASC")
+    }
+    if(sort.sortbyDesc == "id"){
+        sorted.push(" m.id DESC")
+    }
+    if(sort.sortbyDesc == "singer"){
+        sorted.push(" s.name DESC")
+    }
+    if(sort.sortbyDesc=="genre"){
+        sorted.push(" g.name DESC")
+    }
+    if(sort.sortbyDesc=="year"){
+        sorted.push(" m.year DESC")
+    }
+    if(sort.sortbyDesc=="music"){
+        sorted.push(" m.name DESC")
+    }
+    return sorted;
 }
 
 export function getFilters(cookies){
@@ -49,7 +98,6 @@ export function getQueryFilter(filters){
 }
 
 export function getPage(filters){
-    let limit = ''
     let page = filters.page
     let size = filters.size
 

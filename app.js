@@ -29,4 +29,4 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke')
   })
 
-  app.listen(process.env.PORT || 3000);
+  app.listen(process.env.PORT || 8080);

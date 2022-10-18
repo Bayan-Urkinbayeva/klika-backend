@@ -2,11 +2,10 @@ import mysql from 'mysql2'
 import dotenv from 'dotenv'
 dotenv.config()
 export const pool = mysql.createPool({
-    host: process.env.RDS_HOSTNAME,
-    user: process.env.RDS_USERNAME,
-    password: process.env.RDS_PASSWORD,
-    database: process.env.RDS_DB_NAME,
-    port: process.env.RDS_PORT
+    host: process.env.HOST,
+    user: process.env.USER,
+    password: process.env.PASSWORD,
+    database: process.env.DATABASE,
 }).promise();
 
 const columns = {id: 'm.id', name: 'm.name', year: 'm.year', singer: 's.name', genre: 'g.name'}

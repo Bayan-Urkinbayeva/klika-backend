@@ -30,3 +30,14 @@ app.use((err, req, res, next) => {
   })
 
   app.listen(process.env.PORT || 8080);
+
+  app.use(session({
+    secret: 'street',
+    resave: true,
+    saveUninitialized: true,
+    proxy: true,
+    cookie: {
+        sameSite:'none',
+        secure:true
+    }
+}));
